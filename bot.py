@@ -1,9 +1,6 @@
-from collections import defaultdict
-
 import discord
 import logging
-import os.path
-import pickle
+import random
 from discord.ext import commands
 
 token = ""
@@ -19,6 +16,9 @@ sounds = {
     'sad': 'sad.mp3',
     'komigen': 'komigen.mp3',
     'kom igen': 'komigen.mp3',
+
+    # special, just add for lazy documentation
+    'surprise': '',
 }
 
 class Music(commands.Cog):
@@ -37,12 +37,16 @@ class Music(commands.Cog):
     @commands.command()
     async def pang(self, ctx, *, query=""):
         """Plays a file from the local filesystem"""
+
         if query == "help":
             rows = []
             for k in sounds:
                 rows.append(f"!pang {k}")
             await ctx.send('\n'.join(rows))
             return
+        elif query == "surprise":
+            query = random.choice(list(sounds))
+
 
         sound = sounds.get(query.lower())
         if sound:
