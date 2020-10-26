@@ -2,6 +2,7 @@ import discord
 import logging
 import random
 from discord.ext import commands
+from time import sleep
 
 token = ""
 
@@ -16,9 +17,25 @@ sounds = {
     'sad': 'sad.mp3',
     'komigen': 'komigen.mp3',
     'kom igen': 'komigen.mp3',
+    'darth': 'darth.mp3',
 
     # special, just add for lazy documentation
     'surprise': '',
+}
+
+piano = {
+    "c" : "C.mp3",
+    "c#": "C#.mp3",
+    "d" : "D.mp3",
+    "d#": "D#.mp3",
+    "e" : "E.mp3",
+    "f" : "F.mp3",
+    "f#": "F#.mp3",
+    "g" : "G.mp3",
+    "g#": "G#.mp3",
+    "a" : "A.mp3",
+    "a#": "A#.mp3",
+    "b" : "B.mp3",
 }
 
 class Music(commands.Cog):
@@ -80,6 +97,24 @@ class Music(commands.Cog):
         await ctx.send("Changed volume to {}%".format(volume))
 
     @commands.command()
+    async def pangiano(self, ctx, *, query):
+        """Play the piano"""
+        query = query.split()
+        for q in query:
+            if q not in piano and q != ";":
+                continue
+            if q == ";":
+                sleep(0.3)
+                continue
+            sound_file = piano[q]
+            if ctx.voice_client.is_playing():
+                ctx.voice_client.stop()
+            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'sound/piano/{sound_file}'))
+            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+            sleep(0.3)
+
+
+    @commands.command()
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
 
@@ -87,6 +122,7 @@ class Music(commands.Cog):
 
     @sadpang.before_invoke
     @pang.before_invoke
+    @pangiano.before_invoke
     @gnap.before_invoke
     async def ensure_voice(self, ctx):
         if ctx.voice_client is None:
