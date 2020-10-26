@@ -3,6 +3,7 @@ import logging
 import random
 from discord.ext import commands
 from time import sleep
+from pydub import AudioSegment
 
 token = ""
 
@@ -24,18 +25,18 @@ sounds = {
 }
 
 piano = {
-    "c" : "C.mp3",
-    "c#": "C#.mp3",
-    "d" : "D.mp3",
-    "d#": "D#.mp3",
-    "e" : "E.mp3",
-    "f" : "F.mp3",
-    "f#": "F#.mp3",
-    "g" : "G.mp3",
-    "g#": "G#.mp3",
-    "a" : "A.mp3",
-    "a#": "A#.mp3",
-    "b" : "B.mp3",
+    "c" : AudioSegment.from_mp3("sound/piano/C.mp3"),
+    "c#": AudioSegment.from_mp3("sound/piano/C#.mp3"),
+    "d" : AudioSegment.from_mp3("sound/piano/D.mp3"),
+    "d#": AudioSegment.from_mp3("sound/piano/D#.mp3"),
+    "e" : AudioSegment.from_mp3("sound/piano/E.mp3"),
+    "f" : AudioSegment.from_mp3("sound/piano/F.mp3"),
+    "f#": AudioSegment.from_mp3("sound/piano/F#.mp3"),
+    "g" : AudioSegment.from_mp3("sound/piano/G.mp3"),
+    "g#": AudioSegment.from_mp3("sound/piano/G#.mp3"),
+    "a" : AudioSegment.from_mp3("sound/piano/A.mp3"),
+    "a#": AudioSegment.from_mp3("sound/piano/A#.mp3"),
+    "b" : AudioSegment.from_mp3("sound/piano/B.mp3"),
 }
 
 class Music(commands.Cog):
@@ -80,6 +81,13 @@ class Music(commands.Cog):
         await ctx.send("Pang :(")
 
     @commands.command()
+    async def pangstorm(self, ctx):
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'sound/pangstorm.wav'))
+        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+
+        await ctx.send("PANG PANG PANG PANG")
+
+    @commands.command()
     async def gnap(self, ctx):
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'sound/gnap.mp3'))
         ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
@@ -99,19 +107,39 @@ class Music(commands.Cog):
     @commands.command()
     async def pangiano(self, ctx, *, query):
         """Play the piano"""
+        if len(query) == 0:
+            return
         query = query.split()
-        for q in query:
-            if q not in piano and q != ";":
+
+        bpm = query[0]
+        if not bpm.isnumeric():
+            return
+        bpm = int(bpm)
+        streams = []
+
+        await ctx.send("Combining files")
+        for q in query[1:]:
+            if q not in piano and not q.isnumeric():
                 continue
-            if q == ";":
-                sleep(0.3)
+            if q.isnumeric():
+                bps = 60 / bpm
+                streams.append(AudioSegment.silent(duration=1000 * float(q) * bps))
                 continue
+
             sound_file = piano[q]
-            if ctx.voice_client.is_playing():
-                ctx.voice_client.stop()
-            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'sound/piano/{sound_file}'))
-            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
-            sleep(0.3)
+            streams.append(piano[q])
+
+        combined = AudioSegment.empty()
+        for stream in streams:
+            combined += stream
+        combined.export("tmp.wav", format="wav")
+        await ctx.send("Files combined")
+
+
+        await ctx.send("Processing...")
+        source = discord.FFmpegOpusAudio("tmp.wav")
+        await ctx.send("Processing done. Playing")
+        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
 
     @commands.command()
@@ -122,6 +150,7 @@ class Music(commands.Cog):
 
     @sadpang.before_invoke
     @pang.before_invoke
+    @pangstorm.before_invoke
     @pangiano.before_invoke
     @gnap.before_invoke
     async def ensure_voice(self, ctx):
