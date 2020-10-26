@@ -60,6 +60,10 @@ class Music(commands.Cog):
             rows = []
             for k in sounds:
                 rows.append(f"!pang {k}")
+            rows.append("")
+            rows.append("!pangstorm")
+            rows.append("!sadpang")
+            rows.append("!gnap")
             await ctx.send('\n'.join(rows))
             return
         elif query == "surprise":
