@@ -2,8 +2,10 @@ import discord
 import logging
 import random
 from discord.ext import commands
-from time import sleep
+from time import sleep, time
 from pydub import AudioSegment
+from threading import Thread
+import asyncio
 
 token = ""
 
@@ -39,9 +41,20 @@ piano = {
     "b" : AudioSegment.from_mp3("sound/piano/B.mp3"),
 }
 
+last_played = time()
+
+async def check_disconnect_loop(ctx):
+    TIME_DISCONNECT = 60
+    while True:
+        if time() - last_played > TIME_DISCONNECT:
+            await ctx.voice_client.disconnect()
+            return
+        await asyncio.sleep(5)
+
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
 
     @commands.command()
     async def join(self, ctx, *, channel: discord.VoiceChannel):
@@ -55,6 +68,8 @@ class Music(commands.Cog):
     @commands.command()
     async def pang(self, ctx, *, query=""):
         """Plays a file from the local filesystem"""
+        global last_played 
+        last_played = time()
 
         if query == "help":
             rows = []
@@ -76,27 +91,37 @@ class Music(commands.Cog):
             ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
             await ctx.send("PANGPANGPANGPANG")
+        await check_disconnect_loop(ctx)
 
     @commands.command()
     async def sadpang(self, ctx):
+        global last_played
+        last_played = time()
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'sound/sad.mp3'))
         ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
         await ctx.send("Pang :(")
+        await check_disconnect_loop(ctx)
 
     @commands.command()
     async def pangstorm(self, ctx):
+        global last_played
+        last_played = time()
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'sound/pangstorm.wav'))
         ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
         await ctx.send("PANG PANG PANG PANG")
+        await check_disconnect_loop(ctx)
 
     @commands.command()
     async def gnap(self, ctx):
+        global last_played
+        last_played = time()
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'sound/gnap.mp3'))
         ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
         await ctx.send("GNAP GNAP GNAP GNAP")
+        await check_disconnect_loop(ctx)
 
     @commands.command()
     async def volume(self, ctx, volume: int):
@@ -111,6 +136,8 @@ class Music(commands.Cog):
     @commands.command()
     async def pangiano(self, ctx, *, query):
         """Play the piano"""
+        global last_played
+        last_played = time()
         if len(query) == 0:
             return
         query = query.split()
@@ -144,6 +171,7 @@ class Music(commands.Cog):
         source = discord.FFmpegOpusAudio("tmp.wav")
         await ctx.send("Processing done. Playing")
         ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+        await check_disconnect_loop(ctx)
 
 
     @commands.command()
@@ -167,6 +195,7 @@ class Music(commands.Cog):
         elif ctx.voice_client.is_playing():
             ctx.voice_client.stop()
             ctx.author.voice.channel.connect()
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
